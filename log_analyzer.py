@@ -63,7 +63,7 @@ def question2(hosts):
 	counts.foreach(lambda x: showResult("	+ " + str(x[0])+": "+str(x[1])))         
   
 if __name__ == "__main__":
-   main(sys.argv[1:])
+   main(sys.argv[1:]) 
 
 
 

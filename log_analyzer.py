@@ -1,5 +1,6 @@
 import sys, getopt
 import re
+import os
 
 filePath = 'a/log'
 
@@ -68,7 +69,7 @@ def question3(hosts):
 
 	lines = sc.textFile(filePath)
 	logs = lines.map(lambda l: splitLogQ2(l, pattern))
-	fltr = logs.filter(lambda x: x is not None and x[0] in hosts)
+	fltr = logs.filter(lambda x: x is not None and x[0] in hosts).distinct()
 	counts= fltr.reduceByKey(lambda x,y: x + ',' + y)
 	write("* Q3: unique user names")	
 	counts.foreach(lambda x: write("	+ " + str(x[0])+": ["+str(x[1]) + "]")) 
@@ -113,11 +114,13 @@ def question5(hosts):
 	counts.foreach(lambda x: write("	+ " + str(x[0])+": "+str(x[1])))   
 
 def PrintQuestion6(key, pairs):
-	write(" +" +  key + '\n')  
+	write(" +" +  key)  
 	
  	pairs.sort(key = lambda x: -x[1])
 	for x in pairs[:5]:
 		write("  -(" + str(x[1]) + ', ' + x[0] + ')')
+
+	write(' ')
 	
 def question6(hosts):
 	
@@ -172,8 +175,84 @@ def question8(hosts):
 
 	counts = result.filter(lambda x: x[1][1] == 1)
 	write("* Q8: users who started a session on exactly one host, with host name.")	
-	#counts.foreach(lambda x: write("	+ : "+ x[0])) 
 	counts.foreach(lambda x: write("	+ " + str(x[0])+": "+str(x[1][0]))) 
+
+def printQuestion9(key, pairs):
+	write("   + " +  key)  
+	write("     User name mapping:")
+ 	pairs.sort(key = lambda x: x)
+	i = 0
+	for x in pairs:
+		write("        (" + str(x) + ", user-" + str(i) + ")")
+		i+=1
+	
+	write("   Anonymized files: output/" + key + '-anonymized-10')
+
+
+def sortUsers(pairs):
+	users = []
+ 	pairs.sort(key = lambda x: x)
+	i = 0
+	for x in pairs:
+		users.append((str(x), "user-" + str(i)))
+		i+=1
+	return users
+
+
+def splitLogQ9(text, pattern):
+		logrx = re.compile(pattern,re.IGNORECASE|re.DOTALL)
+		m = logrx.match(text)
+		
+		if m is None:
+		  return None
+		
+		return m.group(4)
+
+def mapUsers(line, pairs):
+	users = []
+ 	pairs.sort(key = lambda x: x)
+	
+	i = 0
+	for x in pairs:
+		line = line.replace(str(x), "user-" + str(i))
+		i+=1
+	return line
+
+def exportToFile(key, pairs):
+	output = ""
+	
+	for x in pairs:
+		output = output + str(x) + "\n"
+	
+	if not os.path.exists("output"):
+	    os.makedirs("output")
+
+	filename = "output/" + key + '-anonymized-10'	
+	if os.path.exists(filename):
+	    os.remove(filename)
+
+	f = open( filename, 'w')
+	f.write(output)
+	f.close()
+
+def question9(hosts):
+
+	patternHost = LINUX_LOG_PATTERN +  '([\s\S]+[\w\W]+[\d\D])'
+	pattern =  patternHost + '(Started Session )' + '([0-9]+)' + '( of user )' + '([\w\W]+[\d\D]+)' + '(.)'
+
+	
+
+	lines = sc.textFile(filePath)
+	
+	logs = lines.map(lambda l: splitLogQ2(l, pattern))
+	fltr = logs.filter(lambda x: x is not None and x[0] in hosts).distinct()
+	result = fltr.groupByKey().mapValues(list)
+	result.foreach(lambda x: printQuestion9(x[0], x[1]))
+	ls = lines.map(lambda l: (splitLogQ9(l, patternHost), l))
+	jl = ls.join(result)
+	final = jl.map(lambda x: (x[0], mapUsers(x[1][0], x[1][1])))
+	final = jl.map(lambda x: (x[0], mapUsers(x[1][0], x[1][1]))).groupByKey().mapValues(list)
+	final.foreach(lambda x: exportToFile(x[0], x[1]))
 		
 
 def main(argv):
@@ -216,6 +295,8 @@ def main(argv):
 	question7(hosts)
    elif number == 8:
 	question8(hosts)
+   elif number == 9:
+	question9(hosts)
 
 
 if __name__ == "__main__":

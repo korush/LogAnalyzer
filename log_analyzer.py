@@ -86,6 +86,29 @@ def question4(hosts):
 	results = reduced.map(lambda x: (x[0][0], "(" + x[0][1] + "," +  str(x[1]) + ")")) #"(" + x[0][1] "," + str(x[1]) + ")"))
 	counts= results.reduceByKey(lambda x,y: x + ',' + y)
 	counts.foreach(lambda x: write("	+ " + str(x[0])+": ["+str(x[1]) + "]")) 
+
+def splitLogQ5(text, pattern):
+		logrx = re.compile(pattern,re.IGNORECASE|re.DOTALL)
+		m = logrx.match(text)
+		
+		if m is None:
+		  return None
+		
+		return (m.group(4), m.group(5))
+
+def question5(hosts):
+	
+	pattern = LINUX_LOG_PATTERN + '([\s\S]+[\w\W]+[\d\D]+)'
+
+	lines = sc.textFile(filePath)
+	logs = lines.map(lambda l: splitLogQ5(l, pattern))
+	fltr = logs.filter(lambda x: x is not None and x[0] in hosts and 'error' in x[1])
+	
+	pairs = fltr.map(lambda x: (x[0], 1))
+	counts=pairs.reduceByKey(lambda x,y: x+y).sortByKey()
+	
+	counts.foreach(lambda x: write("	+ " + str(x[0])+": "+str(x[1])))   
+	
 	
 
 def main(argv):
@@ -120,6 +143,8 @@ def main(argv):
 	question3(hosts)
    elif number == 4:
 	question4(hosts)
+   elif number == 5:
+	question5(hosts)
 
 
 

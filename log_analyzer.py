@@ -158,6 +158,20 @@ def question7(hosts):
 	counts = result.filter(lambda x: x[1] == len(hosts))
 	write("* Q7: users who started a session on both hosts, i.e., on exactly 2 hosts.")	
 	counts.foreach(lambda x: write("	+ : "+ x[0])) 
+
+def question8(hosts):
+
+	pattern = LINUX_LOG_PATTERN +  '([\s\S]+[\w\W]+[\d\D])' + '(Started Session )' + '([0-9]+)' + '( of user )' + '([\w\W]+[\d\D]+)' + '(.)'
+
+	lines = sc.textFile(filePath)
+	logs = lines.map(lambda l: splitLogQ7(l, pattern))
+	fltr = logs.filter(lambda x: x is not None and x[1] in hosts).distinct()
+	pairs = fltr.map(lambda x: (x[0], 1))
+	result = pairs.reduceByKey(lambda x,y: x + y)
+
+	counts = result.filter(lambda x: x[1] == 1)
+	write("* Q7: users who started a session on both hosts, i.e., on exactly 2 hosts.")	
+	counts.foreach(lambda x: write("	+ : "+ x[0])) 
 		
 
 def main(argv):
@@ -198,6 +212,8 @@ def main(argv):
 	question6(hosts)
    elif number == 7:
 	question7(hosts)
+   elif number == 8:
+	question8(hosts)
 
 
 if __name__ == "__main__":

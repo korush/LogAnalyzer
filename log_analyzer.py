@@ -34,7 +34,7 @@ def question1(hosts):
 	logs = lines.map(lambda l: splitLogQ1(l, pattern))
 	fltr = logs.filter(lambda x: x is not None and x[0] in hosts)
 	counts=fltr.reduceByKey(lambda x,y: x+y).sortByKey()
-	
+	write("* Q1: line counts")
 	counts.foreach(lambda x: write("	+ " + str(x[0])+": "+str(x[1])))   
 	
 
@@ -58,6 +58,7 @@ def question2(hosts):
 	fltr = logs.filter(lambda x: x is not None and x[0] in hosts and x[1] in 'achille')
 	pairs = fltr.map(lambda x: (x[0],1))
 	counts= pairs.reduceByKey(lambda x,y: x + y).sortByKey()
+	write("* Q2: sessions of user achille")	
 	counts.foreach(lambda x: write("	+ " + str(x[0])+": "+str(x[1])))   
 	
 
@@ -69,6 +70,7 @@ def question3(hosts):
 	logs = lines.map(lambda l: splitLogQ2(l, pattern))
 	fltr = logs.filter(lambda x: x is not None and x[0] in hosts)
 	counts= fltr.reduceByKey(lambda x,y: x + ',' + y)
+	write("* Q3: unique user names")	
 	counts.foreach(lambda x: write("	+ " + str(x[0])+": ["+str(x[1]) + "]")) 
 
 
@@ -83,8 +85,9 @@ def question4(hosts):
 	fltr = logs.filter(lambda x: x is not None and x[0] in hosts)
 	pairs = fltr.map(lambda x: ((x[0],x[1]), 1))
 	reduced = pairs.reduceByKey(lambda x, y: x + y)
-	results = reduced.map(lambda x: (x[0][0], "(" + x[0][1] + "," +  str(x[1]) + ")")) #"(" + x[0][1] "," + str(x[1]) + ")"))
-	counts= results.reduceByKey(lambda x,y: x + ',' + y)
+	results = reduced.map(lambda x: (x[0][0], "(" + x[0][1] + "," +  str(x[1]) + ")")) 
+	counts= results.reduceByKey(lambda x,y: x + ',' + y).sortByKey()
+	write("* Q4: sessions per user")
 	counts.foreach(lambda x: write("	+ " + str(x[0])+": ["+str(x[1]) + "]")) 
 
 def splitLogQ5(text, pattern):
@@ -106,10 +109,32 @@ def question5(hosts):
 	
 	pairs = fltr.map(lambda x: (x[0], 1))
 	counts=pairs.reduceByKey(lambda x,y: x+y).sortByKey()
-	
+	write("* Q5: number of errors")
 	counts.foreach(lambda x: write("	+ " + str(x[0])+": "+str(x[1])))   
+
+def PrintQuestion6(key, pairs):
+	write(" +" +  key + '\n')  
 	
+ 	pairs.sort(key = lambda x: -x[1])
+	for x in pairs[:5]:
+		write("  -(" + str(x[1]) + ', ' + x[0] + ')')
 	
+def question6(hosts):
+	
+	pattern = LINUX_LOG_PATTERN + '([\s\S]+[\w\W]+[\d\D]+)'
+
+	lines = sc.textFile(filePath)
+	logs = lines.map(lambda l: splitLogQ5(l, pattern))
+	fltr = logs.filter(lambda x: x is not None and x[0] in hosts and 'error' in x[1])
+	
+	pairs = fltr.map(lambda x: ((x[0], x[1]), 1))
+	reduced=pairs.reduceByKey(lambda x,y: x+y)
+
+	counts = reduced.map(lambda x: (x[0][0],  (x[0][1], x[1]))).groupByKey().mapValues(list)
+	
+	write("* Q6: 5 most frequent error messages")
+	counts.foreach(lambda x: PrintQuestion6(x[0], x[1]))
+		
 
 def main(argv):
    inputfile = ''
@@ -145,6 +170,8 @@ def main(argv):
 	question4(hosts)
    elif number == 5:
 	question5(hosts)
+   elif number == 6:
+	question6(hosts)
 
 
 

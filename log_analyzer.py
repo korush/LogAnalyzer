@@ -166,12 +166,14 @@ def question8(hosts):
 	lines = sc.textFile(filePath)
 	logs = lines.map(lambda l: splitLogQ7(l, pattern))
 	fltr = logs.filter(lambda x: x is not None and x[1] in hosts).distinct()
-	pairs = fltr.map(lambda x: (x[0], 1))
-	result = pairs.reduceByKey(lambda x,y: x + y)
+	pairs = fltr.map(lambda x: (x[0], (x[1],1)))
+	
+	result = pairs.reduceByKey(lambda x,y: (x[0], x[1]+ y[1]))
 
-	counts = result.filter(lambda x: x[1] == 1)
-	write("* Q7: users who started a session on both hosts, i.e., on exactly 2 hosts.")	
-	counts.foreach(lambda x: write("	+ : "+ x[0])) 
+	counts = result.filter(lambda x: x[1][1] == 1)
+	write("* Q8: users who started a session on exactly one host, with host name.")	
+	#counts.foreach(lambda x: write("	+ : "+ x[0])) 
+	counts.foreach(lambda x: write("	+ " + str(x[0])+": "+str(x[1][0]))) 
 		
 
 def main(argv):

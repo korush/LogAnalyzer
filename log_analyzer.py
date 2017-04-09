@@ -2,7 +2,8 @@ import sys, getopt
 import re
 import os
 
-filePath = 'a/log'
+
+
 
 re1='((?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Sept|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?))'	# Month 1
 re2='.*?'	# Non-greedy match on filler
@@ -27,11 +28,11 @@ def splitLogQ1(text, pattern):
 		
 		return (m.group(4), 1)
 
-def question1(hosts):
+def question1(paths, hosts):
 	
 	pattern = LINUX_LOG_PATTERN +  '([\s\S]+[\w\W]+[\d\D])'
 
-	lines = sc.textFile(filePath)
+	lines = sc.textFile(','.join(paths))
 	logs = lines.map(lambda l: splitLogQ1(l, pattern))
 	fltr = logs.filter(lambda x: x is not None and x[0] in hosts)
 	counts=fltr.reduceByKey(lambda x,y: x+y).sortByKey()
@@ -50,11 +51,11 @@ def splitLogQ2(text, pattern):
 		return (m.group(4), m.group(9))
 	
 
-def question2(hosts):
+def question2(paths, hosts):
 
 	pattern = LINUX_LOG_PATTERN +  '([\s\S]+[\w\W]+[\d\D])' + '(Started Session )' + '([0-9]+)' + '( of user )' + '([\w\W]+[\d\D]+)' + '(.)'
 
-	lines = sc.textFile(filePath)
+	lines = sc.textFile(','.join(paths))
 	logs = lines.map(lambda l: splitLogQ2(l, pattern))
 	fltr = logs.filter(lambda x: x is not None and x[0] in hosts and x[1] in 'achille')
 	pairs = fltr.map(lambda x: (x[0],1))
@@ -63,11 +64,11 @@ def question2(hosts):
 	counts.foreach(lambda x: write("	+ " + str(x[0])+": "+str(x[1])))   
 	
 
-def question3(hosts):
+def question3(paths, hosts):
 
 	pattern = LINUX_LOG_PATTERN +  '([\s\S]+[\w\W]+[\d\D])' + '(Started Session )' + '([0-9]+)' + '( of user )' + '([\w\W]+[\d\D]+)' + '(.)'
 
-	lines = sc.textFile(filePath)
+	lines = sc.textFile(','.join(paths))
 	logs = lines.map(lambda l: splitLogQ2(l, pattern))
 	fltr = logs.filter(lambda x: x is not None and x[0] in hosts).distinct()
 	counts= fltr.reduceByKey(lambda x,y: x + ',' + y)
@@ -77,11 +78,11 @@ def question3(hosts):
 
 
 
-def question4(hosts):
+def question4(paths, hosts):
 
 	pattern = LINUX_LOG_PATTERN +  '([\s\S]+[\w\W]+[\d\D])' + '(Started Session )' + '([0-9]+)' + '( of user )' + '([\w\W]+[\d\D]+)' + '(.)'
 
-	lines = sc.textFile(filePath)
+	lines = sc.textFile(','.join(paths))
 	logs = lines.map(lambda l: splitLogQ2(l, pattern))
 	fltr = logs.filter(lambda x: x is not None and x[0] in hosts)
 	pairs = fltr.map(lambda x: ((x[0],x[1]), 1))
@@ -100,11 +101,11 @@ def splitLogQ5(text, pattern):
 		
 		return (m.group(4), m.group(5))
 
-def question5(hosts):
+def question5(paths, hosts):
 	
 	pattern = LINUX_LOG_PATTERN + '([\s\S]+[\w\W]+[\d\D]+)'
 
-	lines = sc.textFile(filePath)
+	lines = sc.textFile(','.join(paths))
 	logs = lines.map(lambda l: splitLogQ5(l, pattern))
 	fltr = logs.filter(lambda x: x is not None and x[0] in hosts and 'error' in x[1])
 	
@@ -122,11 +123,11 @@ def PrintQuestion6(key, pairs):
 
 	write(' ')
 	
-def question6(hosts):
+def question6(paths, hosts):
 	
 	pattern = LINUX_LOG_PATTERN + '([\s\S]+[\w\W]+[\d\D]+)'
 
-	lines = sc.textFile(filePath)
+	lines = sc.textFile(','.join(paths))
 	logs = lines.map(lambda l: splitLogQ5(l, pattern))
 	fltr = logs.filter(lambda x: x is not None and x[0] in hosts and 'error' in x[1])
 	
@@ -148,11 +149,11 @@ def splitLogQ7(text, pattern):
 		
 		return (m.group(9), m.group(4))
 
-def question7(hosts):
+def question7(paths, hosts):
 
 	pattern = LINUX_LOG_PATTERN +  '([\s\S]+[\w\W]+[\d\D])' + '(Started Session )' + '([0-9]+)' + '( of user )' + '([\w\W]+[\d\D]+)' + '(.)'
 
-	lines = sc.textFile(filePath)
+	lines = sc.textFile(','.join(paths))
 	logs = lines.map(lambda l: splitLogQ7(l, pattern))
 	fltr = logs.filter(lambda x: x is not None and x[1] in hosts).distinct()
 	pairs = fltr.map(lambda x: (x[0], 1))
@@ -162,11 +163,11 @@ def question7(hosts):
 	write("* Q7: users who started a session on both hosts, i.e., on exactly 2 hosts.")	
 	counts.foreach(lambda x: write("	+ : "+ x[0])) 
 
-def question8(hosts):
+def question8(paths, hosts):
 
 	pattern = LINUX_LOG_PATTERN +  '([\s\S]+[\w\W]+[\d\D])' + '(Started Session )' + '([0-9]+)' + '( of user )' + '([\w\W]+[\d\D]+)' + '(.)'
 
-	lines = sc.textFile(filePath)
+	lines = sc.textFile(','.join(paths))
 	logs = lines.map(lambda l: splitLogQ7(l, pattern))
 	fltr = logs.filter(lambda x: x is not None and x[1] in hosts).distinct()
 	pairs = fltr.map(lambda x: (x[0], (x[1],1)))
@@ -235,14 +236,14 @@ def exportToFile(key, pairs):
 	f.write(output)
 	f.close()
 
-def question9(hosts):
+def question9(paths, hosts):
 
 	patternHost = LINUX_LOG_PATTERN +  '([\s\S]+[\w\W]+[\d\D])'
 	pattern =  patternHost + '(Started Session )' + '([0-9]+)' + '( of user )' + '([\w\W]+[\d\D]+)' + '(.)'
 
 	
 
-	lines = sc.textFile(filePath)
+	lines = sc.textFile(','.join(paths))
 	
 	logs = lines.map(lambda l: splitLogQ2(l, pattern))
 	fltr = logs.filter(lambda x: x is not None and x[0] in hosts).distinct()
@@ -261,42 +262,47 @@ def main(argv):
    try:
       opts, args = getopt.getopt(argv,"q",["n", "hostname"])
    except getopt.GetoptError:
-      print 'log_analyzer.py -q  <questionnumber> <host1> <host2> <host3> <hostN>'
+      write('log_analyzer.py -q  <questionnumber> <host1> <host2> <host3> <hostN>')
       sys.exit(2)
 
    for opt, arg in opts:
       if opt != '-q':
-	 print 'log_analyzer.py -q  <questionnumber> <host1> <host2> <host3> <hostN>'
+	 write('log_analyzer.py -q  <questionnumber> <host1> <host2> <host3> <hostN>')
 	 sys.exit(2)
        
-
+	
    
    hosts = []
+   paths = []
    for i in range(len(args)):
     if  i == 0:
 	number=int(args[0])
     else:
-      hosts.append(args[i])
+      if not os.path.exists(args[i]):
+	    write('Directory ' + args[i] + ' does not exists!')
+            sys.exit(1)
+      paths.append(args[i])
+      hosts.append(os.path.basename(os.path.normpath(args[i])))
 
    
    if number == 1:
-	question1(hosts)
+	question1(paths, hosts)
    elif number == 2:
-	question2(hosts)
+	question2(paths, hosts)
    elif number == 3:
-	question3(hosts)
+	question3(paths, hosts)
    elif number == 4:
-	question4(hosts)
+	question4(paths, hosts)
    elif number == 5:
-	question5(hosts)
+	question5(paths, hosts)
    elif number == 6:
-	question6(hosts)
+	question6(paths, hosts)
    elif number == 7:
-	question7(hosts)
+	question7(paths, hosts)
    elif number == 8:
-	question8(hosts)
+	question8(paths, hosts)
    elif number == 9:
-	question9(hosts)
+	question9(paths, hosts)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 Requirments
 1-Python 
-2-Spark
+2-Spark 2.1.0
 
 Run the project:
 1-run pyspark
